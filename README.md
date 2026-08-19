@@ -10,7 +10,7 @@ This is the product repo. The two harness clones (`glc_v5/`, `S17Code/`) are not
 
 | Field | URL | Caption |
 | --- | --- | --- |
-| GitHub repo | this repository | Agent Observatory — S17Code frontend; README has clone-and-run steps |
+| GitHub repo | https://github.com/varunsood189/agent-observatory | Agent Observatory — S17Code frontend; README has clone-and-run steps |
 | Bug PR (S17Code) | https://github.com/theschoolofai/S17Code/pull/18 | Refuse git clean / stash drop; test_destructive_git_subcommands_are_refused |
 | Bug PR (glc_v5) | https://github.com/theschoolofai/glc_v5/pull/35 | SSRF: /v1/observability/agent_trace ignored client base_url; test red then green |
 | YouTube | see [DEMO.md](DEMO.md) | Agent Observatory live run: tests red then green, then a refused/failing run |
