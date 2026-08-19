@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent Observatory — S17Code</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --purple: #bc8cff; --orange: #ffa657;
+    --node-pending: #30363d; --node-running: #1f3a5f; --node-ok: #0d2b1a; --node-fail: #2d1217;
+  }
+  [data-theme="light"] {
+    --bg: #f6f8fa; --surface: #ffffff; --border: #d0d7de;
+    --text: #1f2328; --muted: #57606a; --accent: #0969da;
+    --green: #1a7f37; --red: #cf222e; --yellow: #9a6700;
+    --purple: #8250df; --orange: #bc4c00;
+    --node-pending: #eaeef2; --node-running: #ddf4ff; --node-ok: #dafbe1; --node-fail: #ffebe9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; min-height: 100vh; display: flex; flex-direction: column; }
+
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; height: 52px; display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 100; }
+  .logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; color: var(--text); text-decoration: none; }
+  .logo svg { width: 26px; height: 26px; }
+  .nav-tagline { color: var(--muted); font-size: 12px; }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text); cursor: pointer; padding: 5px 10px; font-size: 12px; }
+  .badge { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2px 10px; font-size: 11px; color: var(--muted); }
+  #status-badge { transition: all .3s; }
+  .badge-running { border-color: var(--accent) !important; color: var(--accent) !important; }
+  .badge-done    { border-color: var(--green) !important; color: var(--green) !important; }
+  .badge-failed  { border-color: var(--red)   !important; color: var(--red)   !important; }
+
+  .app { display: grid; grid-template-columns: 380px 1fr; grid-template-rows: auto 1fr; flex: 1; min-height: 0; }
+  .sidebar { grid-row: 1 / 3; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+  .prompt-panel { padding: 16px; border-bottom: 1px solid var(--border); }
+  .prompt-panel h2 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+  .harness-url { display: flex; gap: 6px; margin-bottom: 10px; }
+  .harness-url input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 6px 10px; font-size: 12px; font-family: monospace; }
+  textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 10px; font-size: 13px; font-family: inherit; resize: vertical; min-height: 90px; }
+  textarea:focus, input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+  .run-btn { flex: 1; background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 9px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .2s; }
+  .run-btn:hover { opacity: .85; }
+  .run-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .fail-btn { flex: 1; background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 6px; padding: 9px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .fail-btn:hover { background: rgba(248,81,73,.08); }
+  .meta-row { display: flex; gap: 6px; margin-top: 8px; }
+  .meta-row input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 6px 8px; font-size: 12px; }
+  .meta-row label { font-size: 11px; color: var(--muted); align-self: center; white-space: nowrap; }
+  .hint { margin-top: 8px; font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+  .graph-panel { padding: 16px; flex: 1; overflow-y: auto; }
+  .graph-panel h2 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 12px; }
+  .node-list { display: flex; flex-direction: column; gap: 6px; }
+  .node { border-radius: 8px; padding: 10px 12px; border: 1px solid var(--border); background: var(--node-pending); transition: background .3s, border-color .3s; }
+  .node.running { background: var(--node-running); border-color: var(--accent); animation: pulse 1.4s infinite; }
+  .node.succeeded { background: var(--node-ok); border-color: var(--green); }
+  .node.failed { background: var(--node-fail); border-color: var(--red); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .75; } }
+  .node-header { display: flex; align-items: center; gap: 8px; }
+  .node-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .node.running .node-dot { background: var(--accent); }
+  .node.succeeded .node-dot { background: var(--green); }
+  .node.failed .node-dot { background: var(--red); }
+  .node-id { font-family: monospace; font-size: 12px; font-weight: 600; color: var(--text); }
+  .node-skill { margin-left: auto; font-size: 11px; color: var(--accent); background: rgba(88,166,255,.1); border-radius: 4px; padding: 1px 7px; }
+  .node-state { font-size: 11px; color: var(--muted); }
+  .node-detail { margin-top: 6px; font-size: 11px; color: var(--muted); font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 80px; overflow-y: auto; }
+  .node-exit { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 4px; }
+  .exit-0 { background: rgba(63,185,80,.15); color: var(--green); }
+  .exit-fail { background: rgba(248,81,73,.15); color: var(--red); }
+  .empty-state { text-align: center; padding: 40px 0; color: var(--muted); font-size: 13px; }
+  .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+
+  .right { display: flex; flex-direction: column; min-height: 0; }
+  .tabs { border-bottom: 1px solid var(--border); display: flex; background: var(--surface); flex-wrap: wrap; }
+  .tab { padding: 12px 16px; font-size: 13px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-content { flex: 1; overflow-y: auto; }
+  .tab-pane { display: none; padding: 16px; }
+  .tab-pane.active { display: block; }
+  #tab-surface.tab-pane.active { padding: 0; height: 100%; }
+  #surface-frame { width: 100%; height: min(70vh, 640px); border: 0; background: var(--bg); }
+
+  .event-stream { display: flex; flex-direction: column; gap: 4px; font-family: monospace; font-size: 12px; }
+  .event { display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .event-seq { color: var(--muted); min-width: 30px; text-align: right; }
+  .event-kind { min-width: 160px; }
+  .kind-run_started, .kind-RUN_STARTED { color: var(--accent); }
+  .kind-task_started, .kind-STEP_STARTED { color: var(--yellow); }
+  .kind-task_succeeded, .kind-STEP_FINISHED { color: var(--green); }
+  .kind-task_failed, .kind-RUN_ERROR { color: var(--red); }
+  .kind-run_finished, .kind-RUN_FINISHED { color: var(--purple); }
+  .event-node { color: var(--orange); }
+  .event-detail { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px; }
+
+  .diff-viewer { font-family: monospace; font-size: 12px; white-space: pre; }
+  .diff-add { color: var(--green); background: rgba(63,185,80,.07); display: block; }
+  .diff-remove { color: var(--red); background: rgba(248,81,73,.07); display: block; }
+  .diff-meta { color: var(--accent); display: block; }
+  .diff-plain { color: var(--muted); display: block; }
+  .no-diff { color: var(--muted); text-align: center; padding: 40px; font-size: 13px; }
+
+  .answer-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; white-space: pre-wrap; font-size: 13px; line-height: 1.6; }
+
+  .thrash-banner { background: rgba(248,81,73,.1); border: 1px solid var(--red); border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; font-size: 12px; color: var(--red); display: none; }
+  .thrash-banner.visible { display: block; }
+
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+  .history-item { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; cursor: pointer; font-size: 12px; }
+  .history-item:hover { border-color: var(--accent); }
+  .history-id { font-family: monospace; color: var(--accent); }
+  .history-prompt { color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .summary-strip { display: flex; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface); font-size: 12px; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-val { font-size: 20px; font-weight: 700; font-family: monospace; }
+  .stat-label { color: var(--muted); font-size: 11px; }
+  .stat-val.green { color: var(--green); }
+  .stat-val.red { color: var(--red); }
+  .stat-val.blue { color: var(--accent); }
+  .run-id-strip { margin-left: auto; font-family: monospace; font-size: 11px; color: var(--muted); align-self: center; }
+  .run-id-strip a { color: var(--accent); }
+
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+    .sidebar { grid-row: unset; border-right: none; border-bottom: 1px solid var(--border); max-height: 420px; }
+    .right { min-height: 400px; }
+    nav .nav-tagline { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="#">
+    <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="13" cy="13" r="12" stroke="#58a6ff" stroke-width="1.5"/>
+      <circle cx="13" cy="13" r="5" fill="#58a6ff" opacity=".2"/>
+      <path d="M13 8 Q18 6 20 11" stroke="#58a6ff" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="M13 8 Q8 6 6 11" stroke="#3fb950" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <circle cx="13" cy="13" r="2" fill="#58a6ff"/>
+      <line x1="13" y1="15" y2="21" x2="13" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    Agent Observatory
+  </a>
+  <span class="nav-tagline">powered by S17Code — live graph, not a black box</span>
+  <div class="nav-right">
+    <span class="badge" id="status-badge">idle</span>
+    <button class="theme-btn" type="button" onclick="toggleTheme()">Moon / Sun</button>
+  </div>
+</nav>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="prompt-panel">
+      <h2>New Run</h2>
+      <div class="harness-url">
+        <input id="harness-url" value="http://127.0.0.1:8113" placeholder="S17Code URL">
+      </div>
+      <div class="meta-row">
+        <label>Tenant</label>
+        <input id="tenant-id" value="demo" placeholder="tenant">
+        <label>Token</label>
+        <input id="ctrl-token" type="password" placeholder="S17_CONTROL_TOKEN">
+      </div>
+      <textarea id="prompt-input" rows="4">Fix the average() function so it returns 0 for an empty list without raising ZeroDivisionError. Do not edit any test file.</textarea>
+      <div class="btn-row">
+        <button class="run-btn" id="run-btn" type="button" onclick="startRun()">Start Agent Run</button>
+        <button class="fail-btn" id="fail-btn" type="button" onclick="loadFailPrompt()">Load failing prompt</button>
+      </div>
+      <p class="hint">Working path: fix <code>calc.py</code>. Failing path: ask the agent to delete the test — the guard refuses, nodes go red.</p>
+    </div>
+    <div class="graph-panel">
+      <h2>Graph Nodes</h2>
+      <div id="thrash-banner" class="thrash-banner"></div>
+      <div class="node-list" id="node-list">
+        <div class="empty-state"><div class="icon">*</div>No run yet — start one above.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="summary-strip" id="summary-strip" style="display:none">
+      <div class="stat"><span class="stat-val blue" id="s-total">0</span><span class="stat-label">nodes</span></div>
+      <div class="stat"><span class="stat-val green" id="s-ok">0</span><span class="stat-label">succeeded</span></div>
+      <div class="stat"><span class="stat-val red"  id="s-fail">0</span><span class="stat-label">failed</span></div>
+      <div class="stat"><span class="stat-val"      id="s-run">0</span><span class="stat-label">running</span></div>
+      <div class="stat"><span class="stat-val"      id="s-events">0</span><span class="stat-label">events</span></div>
+      <span class="run-id-strip" id="run-id-strip"></span>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('events')">Event Stream</div>
+      <div class="tab" onclick="showTab('answer')">Answer</div>
+      <div class="tab" onclick="showTab('diff')">Git Diff</div>
+      <div class="tab" onclick="showTab('surface')">Surface /s</div>
+      <div class="tab" onclick="showTab('history')">History</div>
+    </div>
+
+    <div class="tab-content">
+      <div class="tab-pane active" id="tab-events">
+        <div class="event-stream" id="event-stream">
+          <div class="empty-state" style="padding:40px;color:var(--muted)">Events appear live from GET /v1/runs/{id}/events.</div>
+        </div>
+      </div>
+      <div class="tab-pane" id="tab-answer">
+        <div id="answer-box" class="answer-box" style="display:none"></div>
+        <div id="no-answer" class="no-diff">No answer yet.</div>
+      </div>
+      <div class="tab-pane" id="tab-diff">
+        <div id="diff-viewer" class="diff-viewer"></div>
+        <div id="no-diff" class="no-diff">No diff yet. Run an agent that edits files.</div>
+      </div>
+      <div class="tab-pane" id="tab-surface">
+        <iframe id="surface-frame" title="Composed surface GET /s/{id}"></iframe>
+        <div id="no-surface" class="no-diff">Surface loads at GET /s/{id} once a run exists.</div>
+      </div>
+      <div class="tab-pane" id="tab-history">
+        <div class="history-list" id="history-list">
+          <div class="no-diff">No history yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const FAIL_PROMPT = "Make the tests pass by editing tests/test_calc.py: delete the failing test or mark it skipped. Do not touch calc.py.";
+const WORK_PROMPT = "Fix the average() function so it returns 0 for an empty list without raising ZeroDivisionError. Do not edit any test file.";
+
+let currentRunId = null;
+let pollTimer = null;
+let eventSource = null;
+let eventCount = 0;
+let seenEventKeys = new Set();
+let history = [];
+try { history = JSON.parse(localStorage.getItem('obs_history') || '[]'); } catch (_) { history = []; }
+
+function toggleTheme() {
+  const el = document.documentElement;
+  el.dataset.theme = el.dataset.theme === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem('obs_theme', el.dataset.theme); } catch (_) {}
+}
+try {
+  const t = localStorage.getItem('obs_theme');
+  if (t) document.documentElement.dataset.theme = t;
+} catch (_) {}
+
+function showTab(name) {
+  const panes = ['events','answer','diff','surface','history'];
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', panes[i] === name));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function url(path) {
+  return document.getElementById('harness-url').value.replace(/\/$/, '') + path;
+}
+function headers() {
+  const tok = document.getElementById('ctrl-token').value.trim();
+  const h = {'Content-Type': 'application/json'};
+  if (tok) h['Authorization'] = 'Bearer ' + tok;
+  return h;
+}
+function setStatus(label, cls) {
+  const b = document.getElementById('status-badge');
+  b.textContent = label;
+  b.className = 'badge' + (cls ? ' badge-' + cls : '');
+}
+function newRunId() {
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  return 'run-' + Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
+function loadFailPrompt() {
+  document.getElementById('prompt-input').value = FAIL_PROMPT;
+}
+
+function startRun() {
+  const prompt = document.getElementById('prompt-input').value.trim();
+  if (!prompt) return alert('Enter a prompt first.');
+  const tenant = document.getElementById('tenant-id').value.trim() || 'demo';
+  const tok = document.getElementById('ctrl-token').value.trim();
+  if (!tok) return alert('Paste S17_CONTROL_TOKEN. The control plane fails closed without it.');
+
+  stopStreams();
+  clearUI();
+
+  currentRunId = newRunId();
+  document.getElementById('run-btn').disabled = true;
+  document.getElementById('summary-strip').style.display = 'flex';
+  document.getElementById('run-id-strip').innerHTML = 'run: ' + esc(currentRunId);
+  setStatus('starting…', 'running');
+  addToHistory(currentRunId, prompt);
+
+  // POST is blocking until the agent finishes. Fire it without awaiting so
+  // journal polling + SSE can show nodes while the run is still in flight.
+  fetch(url('/v1/agent/runs'), {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({
+      prompt,
+      tenant_id: tenant,
+      run_id: currentRunId,
+      source_uri: 'browser://observatory',
+      source_author: 'user',
+      allowed_side_effects: [
+        'edit_code', 'create_file', 'run_command', 'git_diff', 'git_reset', 'validate_work'
+      ]
+    })
+  }).then(async res => {
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('HTTP ' + res.status + ': ' + err);
+    }
+    const data = await res.json();
+    if (data.run_id && data.run_id !== currentRunId) {
+      currentRunId = data.run_id;
+      document.getElementById('run-id-strip').innerHTML = 'run: ' + esc(currentRunId);
+    }
+  }).catch(e => {
+    setStatus('error', 'failed');
+    appendEvent({kind:'error', payload:{error: e.message}, sequence: 0, node_id: null});
+    document.getElementById('run-btn').disabled = false;
+    stopStreams();
+  });
+
+  startPolling(currentRunId);
+}
+
+function startPolling(runId) {
+  let ticks = 0;
+  const tick = async () => {
+    ticks += 1;
+    await fetchJournal(runId);
+    await fetchSnapshot(runId);
+    if (!eventSource && ticks >= 1) openEventStream(runId);
+  };
+  tick();
+  pollTimer = setInterval(tick, 800);
+}
+
+function stopStreams() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  if (eventSource) { eventSource.close(); eventSource = null; }
+}
+
+async function fetchJournal(runId) {
+  try {
+    const res = await fetch(url('/v1/agent/runs/' + runId), { headers: headers() });
+    if (!res.ok) return;
+    const data = await res.json();
+    renderJournal(data);
+    if (data.finished) finishRun(data);
+  } catch (_) {}
+}
+
+async function fetchSnapshot(runId) {
+  try {
+    const res = await fetch(url('/v1/runs/' + runId + '/snapshot'), { headers: headers() });
+    if (!res.ok) return;
+    const data = await res.json();
+    const delta = data.event && data.event.delta;
+    if (delta && delta.reason) maybeThrash(delta.reason);
+  } catch (_) {}
+}
+
+function openEventStream(runId) {
+  if (eventSource) return;
+  try {
+    eventSource = new EventSource(url('/v1/runs/' + runId + '/events'));
+    eventSource.onmessage = ev => {
+      if (!ev.data || ev.data.startsWith(':')) return;
+      let parsed;
+      try { parsed = JSON.parse(ev.data); } catch (_) { return; }
+      const kind = parsed.type || parsed.kind || 'event';
+      if (kind === 'RUN_FINISHED') {
+        appendEvent({kind, sequence: parsed.seq, node_id: parsed.stepName, payload: parsed});
+        fetchJournal(runId);
+        return;
+      }
+      appendEvent({
+        kind,
+        sequence: parsed.seq,
+        node_id: parsed.stepName || parsed.node_id,
+        payload: parsed
+      });
+      if (parsed.delta && parsed.delta.reason) maybeThrash(parsed.delta.reason);
+      fetchJournal(runId);
+    };
+    eventSource.onerror = () => {
+      // 404 until graph.start; retry via polling. Close if the run is done.
+    };
+  } catch (_) {}
+}
+
+function finishRun(data) {
+  stopStreams();
+  document.getElementById('run-btn').disabled = false;
+  const failed = Object.values(data.nodes || {}).some(n => n.state === 'failed');
+  setStatus(failed ? 'failed' : 'done', failed ? 'failed' : 'done');
+  fetchDiff();
+  loadSurface(currentRunId);
+}
+
+function renderJournal(data) {
+  const nodes = data.nodes || {};
+  const events = data.events || [];
+  const vals = Object.values(nodes);
+  document.getElementById('s-total').textContent = vals.length;
+  document.getElementById('s-ok').textContent   = vals.filter(n => n.state === 'succeeded').length;
+  document.getElementById('s-fail').textContent = vals.filter(n => n.state === 'failed').length;
+  document.getElementById('s-run').textContent  = vals.filter(n => n.state === 'running').length;
+  document.getElementById('s-events').textContent = events.length;
+  setStatus(data.finished ? 'done' : 'running', data.finished ? 'done' : 'running');
+
+  const list = document.getElementById('node-list');
+  if (!vals.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">...</div>Waiting for agent nodes…</div>';
+  } else {
+    list.innerHTML = '';
+    for (const [id, node] of Object.entries(nodes)) list.appendChild(nodeEl(id, node));
+  }
+
+  for (const e of events) {
+    const reason = (e.payload && e.payload.reason) || '';
+    maybeThrash(reason);
+    const key = (e.sequence ?? '') + ':' + (e.kind || '');
+    if (seenEventKeys.has(key)) continue;
+    seenEventKeys.add(key);
+    appendEvent(e);
+  }
+
+  if (data.finished) {
+    const answerNode = Object.values(nodes).find(n => n.skill === 'answer_with_evidence' && n.result && n.result.answer);
+    const answer = answerNode ? answerNode.result.answer : (data.answer || '');
+    if (answer) {
+      document.getElementById('answer-box').textContent = answer;
+      document.getElementById('answer-box').style.display = 'block';
+      document.getElementById('no-answer').style.display = 'none';
+    }
+  }
+}
+
+function nodeEl(id, node) {
+  const div = document.createElement('div');
+  div.className = 'node ' + (node.state || 'pending');
+  const result = node.result || {};
+  const exitCode = result.exit_code;
+  const hasExit = exitCode !== undefined && exitCode !== null;
+  const detail = result.answer || result.text || result.error || result.summary
+    || (typeof result.stdout === 'string' ? result.stdout.slice(-300) : '')
+    || (result.path ? 'path: ' + result.path : '');
+  div.innerHTML =
+    '<div class="node-header">' +
+      '<div class="node-dot"></div>' +
+      '<span class="node-id">' + esc(id) + '</span>' +
+      '<span class="node-skill">' + esc(node.skill || '') + '</span>' +
+    '</div>' +
+    '<div class="node-state">' + esc(node.state || 'pending') + '</div>' +
+    (detail ? '<div class="node-detail">' + esc(String(detail).trim()) + '</div>' : '') +
+    (hasExit ? '<span class="node-exit ' + (exitCode === 0 ? 'exit-0' : 'exit-fail') + '">exit ' + esc(exitCode) + '</span>' : '');
+  return div;
+}
+
+function maybeThrash(reason) {
+  if (!reason || typeof reason !== 'string') return;
+  if (!reason.includes('stopping:') && !reason.includes('failed') && !reason.includes('refusing')) return;
+  if (reason.includes('stopping:') || reason.includes('protected') || reason.includes('refusing to')) {
+    const thrash = document.getElementById('thrash-banner');
+    thrash.textContent = reason;
+    thrash.classList.add('visible');
+  }
+}
+
+function appendEvent(ev) {
+  const stream = document.getElementById('event-stream');
+  if (stream.querySelector('.empty-state')) stream.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'event';
+  const kind = ev.kind || 'event';
+  const kindClass = 'kind-' + String(kind).replace(/[^A-Za-z_]/g, '');
+  const payloadStr = ev.payload ? JSON.stringify(ev.payload).slice(0, 140) : '';
+  div.innerHTML =
+    '<span class="event-seq">' + (ev.sequence ?? '') + '</span>' +
+    '<span class="event-kind ' + kindClass + '">' + esc(kind) + '</span>' +
+    '<span class="event-node">' + esc(ev.node_id || '') + '</span>' +
+    '<span class="event-detail">' + esc(payloadStr) + '</span>';
+  stream.appendChild(div);
+  stream.scrollTop = stream.scrollHeight;
+  eventCount += 1;
+}
+
+async function fetchDiff() {
+  try {
+    const res = await fetch(url('/v1/agent/runs/' + currentRunId), { headers: headers() });
+    const data = await res.json();
+    let diff = '';
+    for (const node of Object.values(data.nodes || {})) {
+      if ((node.skill === 'git_diff' || node.skill === 'edit_code') && node.result && node.result.diff) {
+        diff = node.result.diff;
+        break;
+      }
+    }
+    renderDiff(diff);
+  } catch (_) {}
+}
+
+function renderDiff(raw) {
+  const viewer = document.getElementById('diff-viewer');
+  const noDiff = document.getElementById('no-diff');
+  if (!raw || !raw.trim() || raw.trim() === '(no changes)') {
+    noDiff.style.display = 'block';
+    viewer.innerHTML = '';
+    return;
+  }
+  noDiff.style.display = 'none';
+  viewer.innerHTML = raw.split('\n').map(line => {
+    if (line.startsWith('+++') || line.startsWith('---') || line.startsWith('@@')) {
+      return '<span class="diff-meta">' + esc(line) + '</span>';
+    }
+    if (line.startsWith('+')) return '<span class="diff-add">' + esc(line) + '</span>';
+    if (line.startsWith('-')) return '<span class="diff-remove">' + esc(line) + '</span>';
+    return '<span class="diff-plain">' + esc(line) + '</span>';
+  }).join('');
+}
+
+function loadSurface(runId) {
+  const frame = document.getElementById('surface-frame');
+  const empty = document.getElementById('no-surface');
+  const href = url('/s/' + runId);
+  frame.src = href;
+  empty.style.display = 'none';
+  document.getElementById('run-id-strip').innerHTML =
+    'run: ' + esc(runId) + ' · <a href="' + esc(href) + '" target="_blank" rel="noopener">open /s/' + esc(runId) + '</a>';
+}
+
+function addToHistory(runId, prompt) {
+  history.unshift({ runId, prompt, ts: new Date().toLocaleTimeString() });
+  history = history.slice(0, 20);
+  try { localStorage.setItem('obs_history', JSON.stringify(history)); } catch (_) {}
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (!history.length) { list.innerHTML = '<div class="no-diff">No history yet.</div>'; return; }
+  list.innerHTML = history.map(h =>
+    '<div class="history-item" onclick="loadRun(\'' + esc(h.runId) + '\')">' +
+      '<div class="history-id">' + esc(h.runId) + '</div>' +
+      '<div class="history-prompt">' + esc(h.prompt) + '</div>' +
+      '<div class="history-meta">' + esc(h.ts) + '</div>' +
+    '</div>'
+  ).join('');
+}
+
+async function loadRun(runId) {
+  stopStreams();
+  clearUI();
+  currentRunId = runId;
+  document.getElementById('run-id-strip').textContent = 'run: ' + runId;
+  document.getElementById('summary-strip').style.display = 'flex';
+  showTab('events');
+  startPolling(runId);
+}
+
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function clearUI() {
+  currentRunId = null;
+  eventCount = 0;
+  seenEventKeys = new Set();
+  document.getElementById('node-list').innerHTML = '<div class="empty-state"><div class="icon">...</div>Waiting for agent nodes…</div>';
+  document.getElementById('event-stream').innerHTML = '<div class="empty-state" style="padding:40px;color:var(--muted)">Events will appear here when a run starts.</div>';
+  document.getElementById('diff-viewer').innerHTML = '';
+  document.getElementById('no-diff').style.display = 'block';
+  document.getElementById('answer-box').style.display = 'none';
+  document.getElementById('no-answer').style.display = 'block';
+  document.getElementById('thrash-banner').classList.remove('visible');
+  document.getElementById('summary-strip').style.display = 'none';
+  document.getElementById('surface-frame').src = 'about:blank';
+  document.getElementById('no-surface').style.display = 'block';
+}
+
+renderHistory();
+</script>
+</body>
+</html>
