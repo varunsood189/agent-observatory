@@ -86,17 +86,27 @@
   #tab-surface.tab-pane.active { padding: 0; height: 100%; }
   #surface-frame { width: 100%; height: min(70vh, 640px); border: 0; background: var(--bg); }
 
-  .event-stream { display: flex; flex-direction: column; gap: 4px; font-family: monospace; font-size: 12px; }
-  .event { display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--border); }
-  .event-seq { color: var(--muted); min-width: 30px; text-align: right; }
-  .event-kind { min-width: 160px; }
+  .event-stream { display: flex; flex-direction: column; gap: 2px; font-family: monospace; font-size: 12px; }
+  .event-toolbar { display: flex; align-items: center; gap: 8px; padding: 0 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 6px; font-size: 11px; color: var(--muted); }
+  .event-toolbar-spacer { flex: 1; }
+  .event-toolbar-btn { background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--muted); cursor: pointer; font-size: 11px; padding: 3px 8px; }
+  .event-toolbar-btn:hover { color: var(--text); border-color: var(--accent); }
+  .event-toolbar-btn.copied { color: var(--green); border-color: var(--green); }
+  .event { border-bottom: 1px solid var(--border); }
+  .event.has-detail { cursor: pointer; }
+  .event.has-detail:hover .event-head { background: rgba(88,166,255,.06); }
+  .event-head { display: flex; gap: 10px; padding: 4px 4px; align-items: center; border-radius: 4px; }
+  .event-seq { color: var(--muted); min-width: 28px; text-align: right; flex-shrink: 0; }
+  .event-kind { min-width: 120px; flex-shrink: 0; }
   .kind-run_started, .kind-RUN_STARTED { color: var(--accent); }
   .kind-task_started, .kind-STEP_STARTED { color: var(--yellow); }
   .kind-task_succeeded, .kind-STEP_FINISHED { color: var(--green); }
   .kind-task_failed, .kind-RUN_ERROR { color: var(--red); }
   .kind-run_finished, .kind-RUN_FINISHED { color: var(--purple); }
-  .event-node { color: var(--orange); }
-  .event-detail { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px; }
+  .event-node { color: var(--orange); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .event-toggle { color: var(--muted); flex-shrink: 0; font-size: 10px; width: 14px; text-align: center; }
+  .event-detail { display: none; color: var(--muted); padding: 0 4px 6px 42px; font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
+  .event.expanded .event-detail { display: block; }
 
   .diff-viewer { font-family: monospace; font-size: 12px; white-space: pre; }
   .diff-add { color: var(--green); background: rgba(63,185,80,.07); display: block; }
@@ -110,12 +120,23 @@
   .thrash-banner { background: rgba(248,81,73,.1); border: 1px solid var(--red); border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; font-size: 12px; color: var(--red); display: none; }
   .thrash-banner.visible { display: block; }
 
+  .history-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .history-header h3 { font-size: 13px; font-weight: 600; flex: 1; }
+  .history-clear { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); cursor: pointer; font-size: 11px; padding: 4px 10px; }
+  .history-clear:hover { color: var(--red); border-color: var(--red); }
   .history-list { display: flex; flex-direction: column; gap: 8px; }
-  .history-item { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; cursor: pointer; font-size: 12px; }
+  .history-item { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; cursor: pointer; font-size: 12px; transition: border-color .2s; }
   .history-item:hover { border-color: var(--accent); }
-  .history-id { font-family: monospace; color: var(--accent); }
-  .history-prompt { color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .history-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .history-item.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .history-row { display: flex; align-items: center; gap: 8px; }
+  .history-id { font-family: monospace; color: var(--accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-status { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; padding: 2px 7px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted); flex-shrink: 0; }
+  .history-status.running { border-color: var(--accent); color: var(--accent); }
+  .history-status.done { border-color: var(--green); color: var(--green); }
+  .history-status.failed { border-color: var(--red); color: var(--red); }
+  .history-prompt { color: var(--muted); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-meta { font-size: 11px; color: var(--muted); margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .tab-count { margin-left: 4px; font-size: 10px; background: var(--border); border-radius: 8px; padding: 1px 6px; color: var(--muted); }
 
   .summary-strip { display: flex; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface); font-size: 12px; flex-wrap: wrap; }
   .stat { display: flex; flex-direction: column; gap: 2px; }
@@ -126,6 +147,27 @@
   .stat-val.blue { color: var(--accent); }
   .run-id-strip { margin-left: auto; font-family: monospace; font-size: 11px; color: var(--muted); align-self: center; }
   .run-id-strip a { color: var(--accent); }
+
+  .diagram-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 11px; color: var(--muted); margin-bottom: 12px; align-items: center; }
+  .diagram-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--border); }
+  .diagram-wrap { overflow: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); padding: 12px; }
+  .diagram-svg { display: block; min-width: 100%; }
+  .diagram-events-title { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin: 16px 0 10px; }
+  .diagram-events { display: flex; flex-direction: column; gap: 8px; }
+  .event-card { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: start; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--surface); }
+  .event-card.selected { border-color: var(--accent); }
+  .event-card-seq { font-family: monospace; color: var(--muted); font-size: 12px; }
+  .event-card-kind { font-family: monospace; font-size: 12px; font-weight: 600; }
+  .event-card-flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .task-box { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; min-width: 140px; max-width: 220px; background: var(--node-pending); }
+  .task-box.running { background: var(--node-running); border-color: var(--accent); }
+  .task-box.succeeded { background: var(--node-ok); border-color: var(--green); }
+  .task-box.failed { background: var(--node-fail); border-color: var(--red); }
+  .task-box-id { font-family: monospace; font-size: 12px; font-weight: 600; }
+  .task-box-skill { font-size: 10px; color: var(--accent); margin-top: 2px; }
+  .task-box-state { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .flow-arrow { color: var(--muted); font-size: 16px; }
+  .event-card-note { font-size: 11px; color: var(--muted); margin-top: 4px; }
 
   @media (max-width: 860px) {
     .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
@@ -152,6 +194,7 @@
   <span class="nav-tagline">powered by S17Code — live graph, not a black box</span>
   <div class="nav-right">
     <span class="badge" id="status-badge">idle</span>
+    <button class="theme-btn" type="button" onclick="clearHistory()">Reset history</button>
     <button class="theme-btn" type="button" onclick="toggleTheme()">Moon / Sun</button>
   </div>
 </nav>
@@ -197,16 +240,39 @@
 
     <div class="tabs">
       <div class="tab active" onclick="showTab('events')">Event Stream</div>
+      <div class="tab" onclick="showTab('diagram')">Diagram</div>
       <div class="tab" onclick="showTab('answer')">Answer</div>
       <div class="tab" onclick="showTab('diff')">Git Diff</div>
       <div class="tab" onclick="showTab('surface')">Surface /s</div>
-      <div class="tab" onclick="showTab('history')">History</div>
+      <div class="tab" onclick="showTab('history')">History<span class="tab-count" id="history-count"></span></div>
     </div>
 
     <div class="tab-content">
       <div class="tab-pane active" id="tab-events">
+        <div class="event-toolbar" id="event-toolbar" style="display:none">
+          <span>Payload collapsed — click a row to expand</span>
+          <span class="event-toolbar-spacer"></span>
+          <button class="event-toolbar-btn" type="button" onclick="setAllEventsExpanded(true)">Expand all</button>
+          <button class="event-toolbar-btn" type="button" onclick="setAllEventsExpanded(false)">Collapse all</button>
+          <button class="event-toolbar-btn" id="copy-events-btn" type="button" onclick="copyEventStream()">Copy</button>
+        </div>
         <div class="event-stream" id="event-stream">
           <div class="empty-state" style="padding:40px;color:var(--muted)">Events appear live from GET /v1/runs/{id}/events.</div>
+        </div>
+      </div>
+      <div class="tab-pane" id="tab-diagram">
+        <div class="diagram-legend">
+          <span><span class="diagram-swatch" style="background:var(--node-running)"></span>running</span>
+          <span><span class="diagram-swatch" style="background:var(--node-ok)"></span>succeeded</span>
+          <span><span class="diagram-swatch" style="background:var(--node-fail)"></span>failed</span>
+          <span>Solid arrow = planner <code>connect</code>. Dashed = assumed order (no edge in the journal).</span>
+        </div>
+        <div class="diagram-wrap">
+          <svg id="diagram-svg" class="diagram-svg" role="img" aria-label="Task graph"></svg>
+        </div>
+        <div class="diagram-events-title">Event diagrams</div>
+        <div class="diagram-events" id="diagram-events">
+          <div class="no-diff">Events and task boxes appear here once a run starts.</div>
         </div>
       </div>
       <div class="tab-pane" id="tab-answer">
@@ -222,8 +288,12 @@
         <div id="no-surface" class="no-diff">Surface loads at GET /s/{id} once a run exists.</div>
       </div>
       <div class="tab-pane" id="tab-history">
+        <div class="history-header">
+          <h3>Past runs (this browser)</h3>
+          <button class="history-clear" type="button" onclick="clearHistory()">Reset history</button>
+        </div>
         <div class="history-list" id="history-list">
-          <div class="no-diff">No history yet.</div>
+          <div class="no-diff">No history yet — start a run to record it here.</div>
         </div>
       </div>
     </div>
@@ -239,6 +309,8 @@ let pollTimer = null;
 let eventSource = null;
 let eventCount = 0;
 let seenEventKeys = new Set();
+let lastJournal = { nodes: {}, events: [] };
+let eventLog = [];
 let history = [];
 try { history = JSON.parse(localStorage.getItem('obs_history') || '[]'); } catch (_) { history = []; }
 
@@ -253,17 +325,34 @@ try {
 } catch (_) {}
 
 function showTab(name) {
-  const panes = ['events','answer','diff','surface','history'];
+  const panes = ['events','diagram','answer','diff','surface','history'];
   document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', panes[i] === name));
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'diagram') renderDiagram(lastJournal);
 }
 
 function url(path) {
   return document.getElementById('harness-url').value.replace(/\/$/, '') + path;
 }
+function asciiHeader(value) {
+  return String(value ?? '')
+    .replace(/^\uFEFF/, '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/[“”„‟‘’]/g, '')
+    .replace(/[^\x20-\x7E]/g, '')
+    .trim();
+}
+function controlToken() {
+  let tok = asciiHeader(document.getElementById('ctrl-token').value);
+  if ((tok.startsWith('"') && tok.endsWith('"')) || (tok.startsWith("'") && tok.endsWith("'"))) {
+    tok = tok.slice(1, -1).trim();
+  }
+  if (tok.toLowerCase().startsWith('bearer ')) tok = tok.slice(7).trim();
+  return tok;
+}
 function headers() {
-  const tok = document.getElementById('ctrl-token').value.trim();
+  const tok = controlToken();
   const h = {'Content-Type': 'application/json'};
   if (tok) h['Authorization'] = 'Bearer ' + tok;
   return h;
@@ -285,9 +374,9 @@ function loadFailPrompt() {
 function startRun() {
   const prompt = document.getElementById('prompt-input').value.trim();
   if (!prompt) return alert('Enter a prompt first.');
-  const tenant = document.getElementById('tenant-id').value.trim() || 'demo';
-  const tok = document.getElementById('ctrl-token').value.trim();
-  if (!tok) return alert('Paste S17_CONTROL_TOKEN. The control plane fails closed without it.');
+  const tenant = asciiHeader(document.getElementById('tenant-id').value) || 'demo';
+  const tok = controlToken();
+  if (!tok) return alert('Paste S17_CONTROL_TOKEN as plain ASCII (no quotes or hidden characters). The control plane fails closed without it.');
 
   stopStreams();
   clearUI();
@@ -400,16 +489,95 @@ function openEventStream(runId) {
   } catch (_) {}
 }
 
+function compactPayload(value, depth) {
+  if (depth > 6) return '[…]';
+  if (typeof value === 'string') {
+    return value.length > 360 ? value.slice(0, 360) + '…' : value;
+  }
+  if (Array.isArray(value)) {
+    const sliced = value.slice(0, 8).map(item => compactPayload(item, depth + 1));
+    if (value.length > 8) sliced.push('…+' + (value.length - 8) + ' more');
+    return sliced;
+  }
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [key, val] of Object.entries(value)) {
+      if (key === 'pages' && Array.isArray(val)) {
+        out.pages = val.slice(0, 6).map(page => ({
+          url: page && page.url,
+          title: page && page.title,
+          text_chars: page && typeof page.text === 'string' ? page.text.length : 0
+        }));
+        if (val.length > 6) out.pages.push('…+' + (val.length - 6) + ' more');
+        continue;
+      }
+      out[key] = compactPayload(val, depth + 1);
+    }
+    return out;
+  }
+  return value;
+}
+
+function plannerStopReason(data) {
+  const events = data.events || [];
+  for (let i = events.length - 1; i >= 0; i--) {
+    const payload = events[i].payload || {};
+    const reason = payload.reason || (payload.delta && payload.delta.reason) || '';
+    if (typeof reason === 'string' && (
+      reason.includes('planner failed') ||
+      reason.includes('failed validation') ||
+      reason.includes('stopping:')
+    )) return reason;
+  }
+  return '';
+}
+
+function composeAnswer(data) {
+  const nodes = Object.entries(data.nodes || {});
+  const answerNode = nodes.find(([, n]) => n.skill === 'answer_with_evidence' && n.result && (n.result.answer || n.result.text));
+  if (answerNode) return answerNode[1].result.answer || answerNode[1].result.text;
+  if (data.answer) return data.answer;
+
+  const parts = [];
+  const stop = plannerStopReason(data);
+  if (stop) {
+    parts.push('No final answer node — the planner stopped: ' + stop);
+    parts.push('Findings from completed nodes:');
+  }
+  for (const [id, node] of nodes) {
+    const result = node.result || {};
+    const text = result.answer || result.text || result.summary;
+    if (!text || !String(text).trim()) continue;
+    parts.push(id + ' (' + (node.skill || 'node') + ')\n' + String(text).trim());
+  }
+  return parts.join('\n\n');
+}
+
+function showAnswer(text) {
+  if (!text || !String(text).trim()) return;
+  document.getElementById('answer-box').textContent = text;
+  document.getElementById('answer-box').style.display = 'block';
+  document.getElementById('no-answer').style.display = 'none';
+}
+
+function runFailed(data) {
+  if (Object.values(data.nodes || {}).some(n => n.state === 'failed')) return true;
+  const stop = plannerStopReason(data);
+  return Boolean(stop);
+}
+
 function finishRun(data) {
   stopStreams();
   document.getElementById('run-btn').disabled = false;
-  const failed = Object.values(data.nodes || {}).some(n => n.state === 'failed');
+  const failed = runFailed(data);
   setStatus(failed ? 'failed' : 'done', failed ? 'failed' : 'done');
+  updateHistoryEntry(currentRunId, data);
   fetchDiff();
   loadSurface(currentRunId);
 }
 
 function renderJournal(data) {
+  lastJournal = data || { nodes: {}, events: [] };
   const nodes = data.nodes || {};
   const events = data.events || [];
   const vals = Object.values(nodes);
@@ -418,7 +586,14 @@ function renderJournal(data) {
   document.getElementById('s-fail').textContent = vals.filter(n => n.state === 'failed').length;
   document.getElementById('s-run').textContent  = vals.filter(n => n.state === 'running').length;
   document.getElementById('s-events').textContent = events.length;
-  setStatus(data.finished ? 'done' : 'running', data.finished ? 'done' : 'running');
+  if (data.finished) {
+    const failed = runFailed(data);
+    setStatus(failed ? 'failed' : 'done', failed ? 'failed' : 'done');
+    updateHistoryEntry(currentRunId, data);
+  } else {
+    setStatus('running', 'running');
+    updateHistoryEntry(currentRunId, data);
+  }
 
   const list = document.getElementById('node-list');
   if (!vals.length) {
@@ -438,14 +613,12 @@ function renderJournal(data) {
   }
 
   if (data.finished) {
-    const answerNode = Object.values(nodes).find(n => n.skill === 'answer_with_evidence' && n.result && n.result.answer);
-    const answer = answerNode ? answerNode.result.answer : (data.answer || '');
-    if (answer) {
-      document.getElementById('answer-box').textContent = answer;
-      document.getElementById('answer-box').style.display = 'block';
-      document.getElementById('no-answer').style.display = 'none';
-    }
+    const answer = composeAnswer(data);
+    if (answer) showAnswer(answer);
+    const stop = plannerStopReason(data);
+    if (stop) maybeThrash(stop);
   }
+  renderDiagram(lastJournal);
 }
 
 function nodeEl(id, node) {
@@ -471,8 +644,8 @@ function nodeEl(id, node) {
 
 function maybeThrash(reason) {
   if (!reason || typeof reason !== 'string') return;
-  if (!reason.includes('stopping:') && !reason.includes('failed') && !reason.includes('refusing')) return;
-  if (reason.includes('stopping:') || reason.includes('protected') || reason.includes('refusing to')) {
+  if (!reason.includes('stopping:') && !reason.includes('failed') && !reason.includes('refusing') && !reason.includes('planner')) return;
+  if (reason.includes('stopping:') || reason.includes('protected') || reason.includes('refusing to') || reason.includes('planner failed') || reason.includes('failed validation')) {
     const thrash = document.getElementById('thrash-banner');
     thrash.textContent = reason;
     thrash.classList.add('visible');
@@ -482,19 +655,330 @@ function maybeThrash(reason) {
 function appendEvent(ev) {
   const stream = document.getElementById('event-stream');
   if (stream.querySelector('.empty-state')) stream.innerHTML = '';
+  document.getElementById('event-toolbar').style.display = 'flex';
+
   const div = document.createElement('div');
-  div.className = 'event';
   const kind = ev.kind || 'event';
   const kindClass = 'kind-' + String(kind).replace(/[^A-Za-z_]/g, '');
-  const payloadStr = ev.payload ? JSON.stringify(ev.payload).slice(0, 140) : '';
+  const compact = ev.payload ? compactPayload(ev.payload, 0) : null;
+  const payloadStr = compact ? JSON.stringify(compact, null, 2) : '';
+
+  div.className = 'event' + (payloadStr ? ' has-detail' : '');
   div.innerHTML =
-    '<span class="event-seq">' + (ev.sequence ?? '') + '</span>' +
-    '<span class="event-kind ' + kindClass + '">' + esc(kind) + '</span>' +
-    '<span class="event-node">' + esc(ev.node_id || '') + '</span>' +
-    '<span class="event-detail">' + esc(payloadStr) + '</span>';
+    '<div class="event-head">' +
+      '<span class="event-seq">' + (ev.sequence ?? '') + '</span>' +
+      '<span class="event-kind ' + kindClass + '">' + esc(kind) + '</span>' +
+      '<span class="event-node">' + esc(ev.node_id || '') + '</span>' +
+      (payloadStr ? '<span class="event-toggle">▸</span>' : '') +
+    '</div>' +
+    (payloadStr ? '<div class="event-detail">' + esc(payloadStr) + '</div>' : '');
+
+  if (payloadStr) {
+    div.addEventListener('click', () => {
+      const open = div.classList.toggle('expanded');
+      div.querySelector('.event-toggle').textContent = open ? '▾' : '▸';
+    });
+  }
+
   stream.appendChild(div);
   stream.scrollTop = stream.scrollHeight;
   eventCount += 1;
+  eventLog.push({
+    sequence: ev.sequence ?? '',
+    kind,
+    node_id: ev.node_id || '',
+    payload: compact
+  });
+}
+
+function eventStreamText() {
+  const lines = [];
+  if (currentRunId) lines.push('run: ' + currentRunId, '');
+  for (const e of eventLog) {
+    const head = [e.sequence, e.kind, e.node_id].filter(Boolean).join('\t');
+    lines.push(head);
+    if (e.payload) {
+      try { lines.push(JSON.stringify(e.payload, null, 2)); }
+      catch (_) { lines.push(String(e.payload)); }
+    }
+    lines.push('');
+  }
+  return lines.join('\n').trim() + '\n';
+}
+
+async function copyEventStream() {
+  const btn = document.getElementById('copy-events-btn');
+  if (!eventLog.length) return;
+  const text = eventStreamText();
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (_) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  btn.textContent = 'Copied';
+  btn.classList.add('copied');
+  setTimeout(() => {
+    btn.textContent = 'Copy';
+    btn.classList.remove('copied');
+  }, 1400);
+}
+
+function setAllEventsExpanded(expanded) {
+  document.querySelectorAll('#event-stream .event.has-detail').forEach(el => {
+    el.classList.toggle('expanded', expanded);
+    const toggle = el.querySelector('.event-toggle');
+    if (toggle) toggle.textContent = expanded ? '▾' : '▸';
+  });
+}
+
+function payloadList(payload, key) {
+  if (!payload) return [];
+  if (Array.isArray(payload[key])) return payload[key];
+  if (payload.delta && Array.isArray(payload.delta[key])) return payload.delta[key];
+  return [];
+}
+
+function buildDiagramModel(data) {
+  const nodes = (data && data.nodes) || {};
+  const events = eventLog.length ? eventLog : ((data && data.events) || []);
+  const tasks = {};
+  for (const [id, n] of Object.entries(nodes)) {
+    tasks[id] = { id, skill: n.skill || '', state: n.state || 'pending' };
+    const parents = n.parents || n.deps || n.depends_on || [];
+    if (!Array.isArray(parents)) continue;
+    for (const p of parents) {
+      if (typeof p === 'string') (tasks[id].parents = tasks[id].parents || []).push(p);
+    }
+  }
+  const edges = [];
+  const edgeKey = new Set();
+  function addEdge(a, b, assumed) {
+    if (!a || !b || a === b) return;
+    const k = a + '>' + b;
+    if (edgeKey.has(k)) return;
+    edgeKey.add(k);
+    edges.push({ from: a, to: b, assumed: !!assumed });
+    if (!tasks[a]) tasks[a] = { id: a, skill: '', state: 'pending' };
+    if (!tasks[b]) tasks[b] = { id: b, skill: '', state: 'pending' };
+  }
+  for (const e of events) {
+    const p = e.payload || {};
+    for (const c of payloadList(p, 'connect')) {
+      if (Array.isArray(c) && c.length >= 2) addEdge(String(c[0]), String(c[1]), false);
+    }
+    const kind = String(e.kind || '');
+    if (e.node_id && (kind.includes('STARTED') || kind === 'task_started')) {
+      if (!tasks[e.node_id]) tasks[e.node_id] = { id: e.node_id, skill: (p.skill || p.agent || ''), state: 'running' };
+    }
+  }
+  for (const id of Object.keys(tasks)) {
+    for (const p of (tasks[id].parents || [])) addEdge(p, id, false);
+  }
+  if (!edges.length) {
+    const order = [];
+    for (const e of events) {
+      const id = e.node_id;
+      if (id && !order.includes(id)) order.push(id);
+    }
+    for (const id of Object.keys(tasks)) if (!order.includes(id)) order.push(id);
+    for (let i = 0; i < order.length - 1; i++) addEdge(order[i], order[i + 1], true);
+  }
+  return { tasks, edges, events };
+}
+
+function diagramLevels(tasks, edges) {
+  const ids = Object.keys(tasks);
+  const incoming = {};
+  const outs = {};
+  ids.forEach(id => { incoming[id] = 0; outs[id] = []; });
+  for (const e of edges) {
+    if (incoming[e.to] == null) incoming[e.to] = 0;
+    incoming[e.to] += 1;
+    if (!outs[e.from]) outs[e.from] = [];
+    outs[e.from].push(e.to);
+  }
+  const level = {};
+  const queue = ids.filter(id => !incoming[id]);
+  queue.forEach(id => { level[id] = 0; });
+  const seen = new Set();
+  while (queue.length) {
+    const id = queue.shift();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    for (const to of (outs[id] || [])) {
+      level[to] = Math.max(level[to] || 0, (level[id] || 0) + 1);
+      incoming[to] -= 1;
+      if (incoming[to] <= 0) queue.push(to);
+    }
+  }
+  ids.forEach(id => { if (level[id] == null) level[id] = 0; });
+  const byLevel = [];
+  for (const id of ids) {
+    const L = level[id];
+    if (!byLevel[L]) byLevel[L] = [];
+    byLevel[L].push(id);
+  }
+  return { level, byLevel };
+}
+
+function svgEl(name, attrs, text) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', name);
+  for (const [k, v] of Object.entries(attrs || {})) el.setAttribute(k, v);
+  if (text != null) el.textContent = text;
+  return el;
+}
+
+function renderDiagram(data) {
+  const svg = document.getElementById('diagram-svg');
+  const eventRoot = document.getElementById('diagram-events');
+  if (!svg || !eventRoot) return;
+  const model = buildDiagramModel(data || lastJournal);
+  const taskIds = Object.keys(model.tasks);
+  if (!taskIds.length && !model.events.length) {
+    svg.replaceChildren();
+    svg.setAttribute('viewBox', '0 0 320 80');
+    svg.setAttribute('height', '80');
+    eventRoot.innerHTML = '<div class="no-diff">Events and task boxes appear here once a run starts.</div>';
+    return;
+  }
+
+  const BOX_W = 168, BOX_H = 64, GAP_X = 36, GAP_Y = 56, PAD = 24;
+  const { byLevel } = diagramLevels(model.tasks, model.edges);
+  const cols = Math.max(1, ...byLevel.map(row => (row || []).length));
+  const rows = byLevel.length || 1;
+  const width = PAD * 2 + cols * BOX_W + (cols - 1) * GAP_X;
+  const height = PAD * 2 + rows * BOX_H + Math.max(0, rows - 1) * GAP_Y;
+  const pos = {};
+  byLevel.forEach((row, r) => {
+    const n = (row || []).length;
+    const rowWidth = n * BOX_W + (n - 1) * GAP_X;
+    let x = PAD + Math.max(0, (width - PAD * 2 - rowWidth) / 2);
+    (row || []).forEach(id => {
+      pos[id] = { x, y: PAD + r * (BOX_H + GAP_Y) };
+      x += BOX_W + GAP_X;
+    });
+  });
+
+  svg.replaceChildren();
+  svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+  svg.setAttribute('width', String(width));
+  svg.setAttribute('height', String(height));
+
+  const defs = svgEl('defs');
+  const marker = svgEl('marker', {
+    id: 'arrow', viewBox: '0 0 10 10', refX: '9', refY: '5',
+    markerWidth: '8', markerHeight: '8', orient: 'auto-start-reverse'
+  });
+  marker.appendChild(svgEl('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: '#8b949e' }));
+  defs.appendChild(marker);
+  svg.appendChild(defs);
+
+  for (const edge of model.edges) {
+    const a = pos[edge.from], b = pos[edge.to];
+    if (!a || !b) continue;
+    const x1 = a.x + BOX_W / 2, y1 = a.y + BOX_H;
+    const x2 = b.x + BOX_W / 2, y2 = b.y;
+    svg.appendChild(svgEl('path', {
+      d: 'M ' + x1 + ' ' + y1 + ' C ' + x1 + ' ' + (y1 + 24) + ', ' + x2 + ' ' + (y2 - 24) + ', ' + x2 + ' ' + y2,
+      fill: 'none',
+      stroke: '#8b949e',
+      'stroke-width': '1.5',
+      'stroke-dasharray': edge.assumed ? '6 4' : '0',
+      'marker-end': 'url(#arrow)'
+    }));
+  }
+
+  for (const id of taskIds) {
+    const t = model.tasks[id];
+    const p = pos[id];
+    if (!p) continue;
+    const g = svgEl('g');
+    const fill = t.state === 'succeeded' ? '#0d2b1a' : t.state === 'failed' ? '#2d1217' : t.state === 'running' ? '#1f3a5f' : '#161b22';
+    const stroke = t.state === 'succeeded' ? '#3fb950' : t.state === 'failed' ? '#f85149' : t.state === 'running' ? '#58a6ff' : '#30363d';
+    g.appendChild(svgEl('rect', {
+      x: p.x, y: p.y, width: BOX_W, height: BOX_H, rx: '8',
+      fill, stroke, 'stroke-width': '1.5'
+    }));
+    const title = svgEl('text', {
+      x: p.x + 10, y: p.y + 22, fill: '#e6edf3', 'font-size': '12', 'font-family': 'ui-monospace, monospace'
+    }, id.length > 22 ? id.slice(0, 20) + '…' : id);
+    const skill = svgEl('text', {
+      x: p.x + 10, y: p.y + 40, fill: '#58a6ff', 'font-size': '10'
+    }, t.skill || 'task');
+    const state = svgEl('text', {
+      x: p.x + 10, y: p.y + 54, fill: '#8b949e', 'font-size': '10'
+    }, t.state || 'pending');
+    g.appendChild(title);
+    g.appendChild(skill);
+    g.appendChild(state);
+    svg.appendChild(g);
+  }
+
+  if (!model.events.length) {
+    eventRoot.innerHTML = '<div class="no-diff">No events yet.</div>';
+    return;
+  }
+  eventRoot.innerHTML = '';
+  for (const e of model.events) {
+    const kind = e.kind || 'event';
+    const p = e.payload || {};
+    const add = payloadList(p, 'add').map(String).filter(x => x && x !== '[object Object]');
+    const connect = payloadList(p, 'connect');
+    const reason = p.reason || (p.delta && p.delta.reason) || '';
+    const taskId = e.node_id || (add[0] || '');
+    const task = taskId ? (model.tasks[taskId] || { id: taskId, skill: p.skill || p.agent || '', state: '' }) : null;
+    const card = document.createElement('div');
+    card.className = 'event-card';
+    const flow = document.createElement('div');
+    flow.className = 'event-card-flow';
+    if (String(kind).includes('STARTED') || kind === 'task_started') {
+      flow.innerHTML = '<span class="flow-arrow">→</span>';
+      if (task) flow.appendChild(taskBoxEl(task, 'start'));
+    } else if (String(kind).includes('FINISHED') || kind === 'task_succeeded' || kind === 'task_failed') {
+      if (task) flow.appendChild(taskBoxEl(task, 'done'));
+      flow.insertAdjacentHTML('beforeend', '<span class="flow-arrow">→</span><span class="event-card-note">' + esc(kind) + '</span>');
+    } else if (add.length || connect.length) {
+      const added = add.length ? add : connect.map(c => Array.isArray(c) ? c[1] : c);
+      added.slice(0, 6).forEach((id, i) => {
+        if (i) flow.insertAdjacentHTML('beforeend', '<span class="flow-arrow">+</span>');
+        flow.appendChild(taskBoxEl(model.tasks[id] || { id, skill: '', state: 'pending' }));
+      });
+      connect.slice(0, 4).forEach(c => {
+        if (!Array.isArray(c) || c.length < 2) return;
+        flow.insertAdjacentHTML('beforeend', '<span class="flow-arrow">⇒</span>');
+        flow.appendChild(taskBoxEl(model.tasks[c[0]] || { id: c[0], skill: '', state: '' }));
+        flow.insertAdjacentHTML('beforeend', '<span class="flow-arrow">→</span>');
+        flow.appendChild(taskBoxEl(model.tasks[c[1]] || { id: c[1], skill: '', state: '' }));
+      });
+    } else {
+      flow.innerHTML = '<span class="event-card-note">run-level event</span>';
+    }
+    const note = reason ? '<div class="event-card-note">' + esc(String(reason).slice(0, 220)) + '</div>' : '';
+    card.innerHTML =
+      '<div class="event-card-seq">' + esc(e.sequence ?? '') + '</div>' +
+      '<div><div class="event-card-kind kind-' + esc(String(kind).replace(/[^A-Za-z_]/g, '')) + '">' + esc(kind) + '</div></div>' +
+      '<div class="event-card-note">' + esc(taskId) + '</div>';
+    card.children[1].appendChild(flow);
+    if (note) card.children[1].insertAdjacentHTML('beforeend', note);
+    eventRoot.appendChild(card);
+  }
+}
+
+function taskBoxEl(task, hint) {
+  const div = document.createElement('div');
+  div.className = 'task-box ' + (task.state || '');
+  div.innerHTML =
+    '<div class="task-box-id">' + esc(task.id) + '</div>' +
+    '<div class="task-box-skill">' + esc(task.skill || 'task') + '</div>' +
+    '<div class="task-box-state">' + esc(hint ? (hint + ' · ' + (task.state || '')) : (task.state || 'pending')) + '</div>';
+  return div;
 }
 
 async function fetchDiff() {
@@ -541,32 +1025,111 @@ function loadSurface(runId) {
     'run: ' + esc(runId) + ' · <a href="' + esc(href) + '" target="_blank" rel="noopener">open /s/' + esc(runId) + '</a>';
 }
 
-function addToHistory(runId, prompt) {
-  history.unshift({ runId, prompt, ts: new Date().toLocaleTimeString() });
-  history = history.slice(0, 20);
+function saveHistory() {
   try { localStorage.setItem('obs_history', JSON.stringify(history)); } catch (_) {}
   renderHistory();
 }
 
+function addToHistory(runId, prompt) {
+  const now = new Date();
+  history = history.filter(h => h.runId !== runId);
+  history.unshift({
+    runId,
+    prompt,
+    status: 'running',
+    nodesTotal: 0,
+    nodesOk: 0,
+    nodesFail: 0,
+    startedAt: now.toISOString(),
+    ts: now.toLocaleString()
+  });
+  history = history.slice(0, 30);
+  saveHistory();
+}
+
+function updateHistoryEntry(runId, data) {
+  if (!runId) return;
+  const entry = history.find(h => h.runId === runId);
+  if (!entry) return;
+  const nodes = Object.values(data.nodes || {});
+  entry.nodesTotal = nodes.length;
+  entry.nodesOk = nodes.filter(n => n.state === 'succeeded').length;
+  entry.nodesFail = nodes.filter(n => n.state === 'failed').length;
+  if (data.finished) {
+    entry.status = runFailed(data) ? 'failed' : 'done';
+    entry.finishedAt = new Date().toISOString();
+  } else if (nodes.some(n => n.state === 'running')) {
+    entry.status = 'running';
+  }
+  saveHistory();
+}
+
+function clearHistory() {
+  if (!history.length) {
+    alert('History is already empty.');
+    return;
+  }
+  if (!confirm('Reset all run history in this browser?')) return;
+  history = [];
+  saveHistory();
+}
+
 function renderHistory() {
   const list = document.getElementById('history-list');
-  if (!history.length) { list.innerHTML = '<div class="no-diff">No history yet.</div>'; return; }
-  list.innerHTML = history.map(h =>
-    '<div class="history-item" onclick="loadRun(\'' + esc(h.runId) + '\')">' +
-      '<div class="history-id">' + esc(h.runId) + '</div>' +
+  const countEl = document.getElementById('history-count');
+  if (countEl) countEl.textContent = history.length ? String(history.length) : '';
+  if (!history.length) {
+    list.innerHTML = '<div class="no-diff">No history yet — start a run to record it here.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  for (const h of history) {
+    const div = document.createElement('div');
+    div.className = 'history-item' + (h.runId === currentRunId ? ' active' : '');
+    div.onclick = () => loadRun(h.runId);
+    const status = h.status || 'running';
+    const stats = h.nodesTotal
+      ? h.nodesOk + ' ok · ' + h.nodesFail + ' fail · ' + h.nodesTotal + ' nodes'
+      : (status === 'running' ? 'in progress…' : '');
+    div.innerHTML =
+      '<div class="history-row">' +
+        '<span class="history-id">' + esc(h.runId) + '</span>' +
+        '<span class="history-status ' + esc(status) + '">' + esc(status) + '</span>' +
+      '</div>' +
       '<div class="history-prompt">' + esc(h.prompt) + '</div>' +
-      '<div class="history-meta">' + esc(h.ts) + '</div>' +
-    '</div>'
-  ).join('');
+      '<div class="history-meta">' +
+        '<span>' + esc(h.ts) + '</span>' +
+        (stats ? '<span>' + esc(stats) + '</span>' : '') +
+      '</div>';
+    list.appendChild(div);
+  }
 }
 
 async function loadRun(runId) {
   stopStreams();
-  clearUI();
+  clearUI(false);
   currentRunId = runId;
   document.getElementById('run-id-strip').textContent = 'run: ' + runId;
   document.getElementById('summary-strip').style.display = 'flex';
+  renderHistory();
   showTab('events');
+  const entry = history.find(h => h.runId === runId);
+  if (entry && entry.prompt) {
+    document.getElementById('prompt-input').value = entry.prompt;
+  }
+  try {
+    const res = await fetch(url('/v1/agent/runs/' + runId), { headers: headers() });
+    if (res.ok) {
+      const data = await res.json();
+      renderJournal(data);
+      if (data.finished) {
+        finishRun(data);
+      } else {
+        startPolling(runId);
+      }
+      return;
+    }
+  } catch (_) {}
   startPolling(runId);
 }
 
@@ -576,12 +1139,16 @@ function esc(s) {
     .replace(/"/g,'&quot;');
 }
 
-function clearUI() {
-  currentRunId = null;
+function clearUI(resetRunId = true) {
+  if (resetRunId) currentRunId = null;
   eventCount = 0;
   seenEventKeys = new Set();
+  eventLog = [];
+  const copyBtn = document.getElementById('copy-events-btn');
+  if (copyBtn) { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }
   document.getElementById('node-list').innerHTML = '<div class="empty-state"><div class="icon">...</div>Waiting for agent nodes…</div>';
   document.getElementById('event-stream').innerHTML = '<div class="empty-state" style="padding:40px;color:var(--muted)">Events will appear here when a run starts.</div>';
+  document.getElementById('event-toolbar').style.display = 'none';
   document.getElementById('diff-viewer').innerHTML = '';
   document.getElementById('no-diff').style.display = 'block';
   document.getElementById('answer-box').style.display = 'none';
@@ -590,6 +1157,8 @@ function clearUI() {
   document.getElementById('summary-strip').style.display = 'none';
   document.getElementById('surface-frame').src = 'about:blank';
   document.getElementById('no-surface').style.display = 'block';
+  lastJournal = { nodes: {}, events: [] };
+  renderDiagram(lastJournal);
 }
 
 renderHistory();
