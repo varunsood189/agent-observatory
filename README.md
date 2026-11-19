@@ -1,34 +1,39 @@
 # Agent Observatory
 
-**School of AI · EAG V3 · Session 17**
+Live UI for watching a coding agent work: graph nodes light up, commands go red then green, diffs and SSE land in the same pane.
 
-A live frontend for [S17Code](https://github.com/theschoolofai/S17Code). Type a coding task, watch graph nodes appear, watch a command go red then green, inspect the diff. It also has a failing path: ask the agent to delete the test file and the guard refuses.
+**What a recruiter should notice:** I found and fixed two harness bugs while building this — an SSRF on the agent-trace proxy, and irreversible `git clean` / `git stash drop` slipping past the command allowlist — then shipped tests and open PRs for both.
 
-This is the product repo. The two harness clones (`glc_v5/`, `S17Code/`) are not included — clone them separately as below.
+> **Screenshot / demo GIF** — drop a UI capture at `docs/observatory.png` (or a short GIF) and replace this callout. Until then: type a task → watch pytest fail then pass → load the failing prompt and see the protected-path guard refuse.
 
-## LMS links
+## Security findings (linked PRs)
 
-| Field | URL | Caption |
+| Finding | Impact | Proof |
 | --- | --- | --- |
-| GitHub repo | https://github.com/varunsood189/agent-observatory | Agent Observatory — S17Code frontend; README has clone-and-run steps |
-| Bug PR (S17Code) | https://github.com/theschoolofai/S17Code/pull/18 | Refuse git clean / stash drop; test_destructive_git_subcommands_are_refused |
-| Bug PR (glc_v5) | https://github.com/theschoolofai/glc_v5/pull/35 | SSRF: /v1/observability/agent_trace ignored client base_url; test red then green |
-| YouTube | see [DEMO.md](DEMO.md) | Agent Observatory live run: tests red then green, then a refused/failing run |
+| **SSRF** on `GET /v1/observability/agent_trace/{id}?base_url=` | Client-supplied URL was used as the fetch target — loopback admin ports or cloud metadata were reachable from the dashboard | [glc_v5#35](https://github.com/theschoolofai/glc_v5/pull/35) · `test_agent_trace_refuses_client_supplied_base_url` |
+| **Destructive git** in `GIT_SUBCOMMANDS` | `git clean -fd` / `git stash drop|clear` are irreversible; the session rule is local + reversible only | [S17Code#18](https://github.com/theschoolofai/S17Code/pull/18) · `test_destructive_git_subcommands_are_refused` |
 
-Do not submit [glc_v5#21](https://github.com/theschoolofai/glc_v5/pull/21) (Session 16 Telegram). That is a different assignment.
+Both PRs include a red→green test path. This repo is the product UI; the harness clones (`glc_v5`, `S17Code`) stay separate.
 
-## What the agent wrote vs what I wrote
+## What you see
 
-- **Agent (Cursor Auto):** first `index.html` draft, first README, diagnosis of the `git clean` / `git stash` hole, the failing test, and the allowlist fix in `s17code/coding/exec.py`.
-- **I (with the agent in this follow-up):** wired `Authorization: Bearer`, live SSE + journal polling against a client `run_id`, CORS so a browser can talk to port 8113, the failing-prompt button, `/s/{id}` surface tab, the glc_v5 SSRF fix, both PRs, and this README.
+- Live graph of agent nodes (pending → running → ok/fail)
+- Journal + SSE event stream while `POST /v1/agent/runs` is still in flight
+- AG-UI snapshot, Git Diff, and composed `/s/{id}` Surface tab
+- **Working path:** fix a real failing test (`average([])` ZeroDivisionError)
+- **Failing path:** “Load failing prompt” asks the agent to delete `tests/test_calc.py` — protected-path guard refuses
 
-A prompt that contained the answer would count as me writing the code. The git-clean hole was found by reading `exec.py` and running tests, not by pasting the fix into the prompt.
+```text
+Browser (this repo) ──Bearer──► S17Code :8113 ──► workspace + pytest
+                     SSE/journal         │
+                                         └──► glc_v5 :8111 (LLM gateway)
+```
 
-## Part 1 — run Agent Observatory
+## Quick start
 
-You need two services and a tiny workspace the agent is allowed to edit.
+You need the gateway, a tiny workspace, S17Code with the additive CORS/`run_id` patch, then this static UI.
 
-### 1. Start `glc_v5` (LLM gateway, port 8111)
+### 1. Start `glc_v5` (port 8111)
 
 ```bash
 git clone https://github.com/theschoolofai/glc_v5.git
@@ -38,7 +43,7 @@ cp .env.example .env   # put at least one provider key in here
 uv run glc serve
 ```
 
-Leave this running. Health: http://127.0.0.1:8111/healthz
+Health: http://127.0.0.1:8111/healthz
 
 ### 2. Create a workspace with a real failing test
 
@@ -62,7 +67,7 @@ git add -A
 git -c user.email=demo@demo -c user.name=Demo commit -m "base"
 ```
 
-`python3 -c "from calc import average; average([])"` raises `ZeroDivisionError`. The test is red on purpose.
+`average([])` raises `ZeroDivisionError` — the test is red on purpose.
 
 ### 3. Start S17Code (port 8113)
 
@@ -88,7 +93,7 @@ Health: http://127.0.0.1:8113/healthz
 
 ### 4. Open the Observatory
 
-From this repo (a static server, not `file://` — some browsers block `file://` fetch):
+From this repo (a static server — some browsers block `file://` fetch):
 
 ```bash
 python3 -m http.server 8080
@@ -96,56 +101,37 @@ python3 -m http.server 8080
 
 Open http://127.0.0.1:8080/index.html
 
-Fill in:
+| Field | Value |
+| --- | --- |
+| S17Code URL | `http://127.0.0.1:8113` |
+| Tenant | `demo` |
+| Token | same as `S17_CONTROL_TOKEN` |
 
-- **S17Code URL:** `http://127.0.0.1:8113`
-- **Tenant:** `demo`
-- **Token:** the same value as `S17_CONTROL_TOKEN`
+**Working run.** Leave the default prompt (fix `average([])`, do not touch tests). Press **Start Agent Run**. Nodes appear, pytest goes red then green, then the Git Diff tab.
 
-**Working run.** Leave the default prompt (fix `average([])`, do not touch tests). Press **Start Agent Run**. You should see nodes appear, `run_command` / pytest go red then green, then the Git Diff tab.
+**Failing run.** Press **Load failing prompt** → Start. The protected-path guard refuses; nodes go red. That is the intentional failure demo.
 
-**Failing run.** Press **Load failing prompt** (it asks the agent to delete `tests/test_calc.py`). Start the run. The protected-path guard refuses; nodes go red. That is the demo of failure.
+APIs the UI uses: `POST /v1/agent/runs`, `GET /v1/agent/runs/{id}`, `GET /v1/runs/{id}/events` (SSE), `GET /v1/runs/{id}/snapshot`, `GET /s/{id}`.
 
-The UI talks to:
-
-- `POST /v1/agent/runs` (Bearer token, client `run_id` so the graph is visible while POST is still in flight)
-- `GET /v1/agent/runs/{id}` (journal: nodes, events, exit codes)
-- `GET /v1/runs/{id}/events` (SSE)
-- `GET /v1/runs/{id}/snapshot` (AG-UI snapshot)
-- `GET /s/{id}` (composed surface, Surface tab)
-
-## Part 2 — bug PRs
-
-### S17Code — irreversible git subcommands
-
-**What broke.** `GIT_SUBCOMMANDS` included `clean` and `stash`. `git clean -fd` deletes untracked files with no `git reset` recovery. `git stash drop` / `clear` destroy stash entries. The session rule is that allowed commands are local and reversible.
-
-**Test.** `tests/test_coding_surface.py::test_destructive_git_subcommands_are_refused`
+## Verify the security fixes
 
 ```bash
+# Destructive git allowlist (S17Code)
 cd S17Code
 uv run pytest tests/test_coding_surface.py::test_destructive_git_subcommands_are_refused -v
-```
+# Four cases: git clean -fd, git clean -fdx, git stash drop, git stash clear
 
-Four cases: `git clean -fd`, `git clean -fdx`, `git stash drop`, `git stash clear`. Fail before the allowlist change (`DID NOT RAISE`). Pass after.
-
-PR: https://github.com/theschoolofai/S17Code/pull/18
-
-### glc_v5 — agent-trace SSRF
-
-**What broke.** `GET /v1/observability/agent_trace/{id}?base_url=` used the query parameter as the fetch target. Anyone who can open `/dashboard` could make GLC GET loopback admin ports or cloud metadata.
-
-**Test.** `tests/test_observability.py::test_agent_trace_refuses_client_supplied_base_url`
-
-```bash
+# Agent-trace SSRF (glc_v5)
 cd glc_v5
 uv run pytest tests/test_observability.py -q
+# ?base_url=http://127.0.0.1:8111/v1/control/kill → 400, never connects
+# Runtime URL comes only from GLC_S17_BASE_URL / GLC_S15_BASE_URL / S16_BASE_URL
 ```
 
-`?base_url=http://127.0.0.1:8111/v1/control/kill` is **400** and never connects. The runtime URL comes only from `GLC_S17_BASE_URL` / `GLC_S15_BASE_URL` / `S16_BASE_URL`.
+## Demo
 
-PR: https://github.com/theschoolofai/glc_v5/pull/35
+Recording checklist (working run → failing run, unlisted YouTube): [DEMO.md](DEMO.md).
 
-## Demo script
+## Attribution
 
-See [DEMO.md](DEMO.md) for the YouTube recording checklist (working run, then failing run, unlisted not private, incognito check).
+Built against [S17Code](https://github.com/theschoolofai/S17Code) / [glc_v5](https://github.com/theschoolofai/glc_v5) (School of AI EAG V3). Cursor drafted the first `index.html` and spotted the git-clean hole; follow-up work wired Bearer auth, live SSE + journal polling, CORS, the failing-prompt path, the Surface tab, the SSRF fix, and both upstream PRs.
